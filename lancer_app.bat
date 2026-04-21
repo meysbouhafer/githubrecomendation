@@ -2,12 +2,12 @@
 REM Lancer l'application Streamlit GUI
 REM Double-cliquez sur ce fichier pour démarrer l'application
 
-title Systeme de Recommandation IA - Streamlit GUI
+title GitHub Repo Recommender - Streamlit GUI
 cd /d "%~dp0"
 
 echo.
 echo ============================================================
-echo   Systeme de Recommandation d'Outils IA
+echo   GitHub Repo Recommender
 echo   Interface Graphique Streamlit
 echo ============================================================
 echo.

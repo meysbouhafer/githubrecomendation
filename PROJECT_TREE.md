@@ -28,7 +28,7 @@ files (1)/
 │  └─ systeme_recommandation.py   [500 lignes] CLI version
 │
 ├─ 📊 DONNÉES
-│  ├─ ai_tools_dataset.csv         [94 outils] Database
+│  ├─ github_top_repositories_V2.csv         [5 000 repositories] Database
 │  ├─ distribution_dataset.png     Graphique 1
 │  ├─ comparaison_methodes.png     Graphique 2
 │  └─ scores_recommandation.png    Graphique 3
@@ -91,7 +91,7 @@ files (1)/
 
 | Fichier | Contenu |
 |---------|---------|
-| ai_tools_dataset.csv | 94 outils IA |
+| github_top_repositories_V2.csv | 5 000 repositories GitHub |
 | distribution_dataset.png | Pie chart |
 | comparaison_methodes.png | Comparison |
 | scores_recommandation.png | Bar chart |
@@ -214,7 +214,7 @@ App ouvre automatiquement! 🎉
 ### Avant (Version 1.0)
 ```
 systeme_recommandation.py  [Script CLI]
-ai_tools_dataset.csv       [Data]
+github_top_repositories_V2.csv       [Data]
 ────────────────────────────────
 = 2 fichiers, 500 lignes code
 ```
@@ -227,7 +227,7 @@ config.py [Configuration]
 setup.py [Installation]
 requirements.txt [Dépendances]
 README.md + 5 docs [Documentation]
-ai_tools_dataset.csv [Data]
+github_top_repositories_V2.csv [Data]
 3 .png [Graphiques]
 ────────────────────────────────
 = 16 fichiers, 1,400 lignes code + 1,650 doc
@@ -308,3 +308,4 @@ Pages:       1 → 6         (+500%)
 
 **Créé avec ❤️ par la Promo 4ING**  
 **Université 8 Mai 45 · 2026**
+

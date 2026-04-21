@@ -1,6 +1,6 @@
 <!-- 
 GUIDE DE DÉMARRAGE RAPIDE
-Système de Recommandation d'Outils IA - Interface GUI
+Système de Recommandation de Repositories GitHub - Interface GUI
 ========================================================
 -->
 
@@ -116,7 +116,7 @@ C'est là que tout se passe ! ✨
 - Affichage immédiat des résultats
 
 #### 📄 **Table Complète**
-- Tous les 94 outils en tableau
+- Tous les 5 000 repositories en tableau
 - Colonnes: Nom, Description, Domaine, Besoin, Prix
 - Triable et scrollable
 
@@ -242,7 +242,7 @@ pip install -r requirements.txt --upgrade
 |----------|----------|
 | **"Module not found"** | `pip install -r requirements.txt` |
 | **"Port 8501 already in use"** | Utiliser `--server.port 8502` |
-| **"CSV file not found"** | Vérifier que `ai_tools_dataset.csv` est dans le même dossier |
+| **"CSV file not found"** | Vérifier que `github_top_repositories_V2.csv` est dans le même dossier |
 | **App lente** | Réduire le nombre de résultats |
 | **Pas de résultats** | Rédiger une requête plus détaillée |
 
@@ -251,7 +251,7 @@ pip install -r requirements.txt --upgrade
 ## 📊 DONNÉES
 
 ### Dataset
-- **Total:** 94 outils IA
+- **Total:** 5 000 repositories GitHub
 - **Gratuits:** 20 (21%)
 - **Freemium:** 62 (66%)
 - **Payants:** 12 (13%)
@@ -302,3 +302,4 @@ Voir `README.md` pour plus de détails techniques.
 ---
 
 **Bonne chance ! Amusez-vous bien avec l'application ! 🚀**
+

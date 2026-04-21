@@ -232,8 +232,8 @@ F1-score: 0.692
    - Ouvrez: `config.py`
    - Modifiez: `COLOR_PALETTE`
 
-2. **Ajouter plus d'outils:**
-   - Ouvrez: `ai_tools_dataset.csv`
+2. **Ajouter plus de repositories:**
+   - Ouvrez: `github_top_repositories_V2.csv`
    - Ajoutez une ligne avec les colonnes
 
 3. **Modifier les messages:**
@@ -347,3 +347,4 @@ streamlit run app.py --server.port 8502
 **Amusez-vous bien avec l'application! 🚀**
 
 *Pour plus de cas d'usage, consultez [INDEX.md](INDEX.md)*
+

@@ -1,7 +1,7 @@
 """
-Installation et Setup - Système de Recommandation d'Outils IA
-================================================================
-Ce script installe toutes les dépendances et configure l'environnement
+Installation et Setup - GitHub Repo Recommender
+================================================
+Ce script installe toutes les dépendances et configure l'environnement.
 """
 
 import subprocess
@@ -50,7 +50,6 @@ def install_packages():
         "matplotlib>=3.4.0",
         "plotly>=5.0.0",
         "streamlit>=1.20.0",
-        "gensim>=4.0.0",
     ]
     
     print_step(1, 4, "Installation des packages Python")
@@ -84,12 +83,12 @@ def verify_dataset():
     """Vérifie que le dataset existe"""
     print_step(2, 4, "Vérification du dataset")
     
-    if os.path.exists("ai_tools_dataset.csv"):
-        file_size = os.path.getsize("ai_tools_dataset.csv") / 1024
+    if os.path.exists("github_top_repositories_V2.csv"):
+        file_size = os.path.getsize("github_top_repositories_V2.csv") / 1024
         print_ok(f"Dataset trouvé ({file_size:.1f} KB)")
         return True
     else:
-        print_error("ai_tools_dataset.csv non trouvé")
+        print_error("github_top_repositories_V2.csv non trouvé")
         print_warning("Assurez-vous que le fichier est dans le répertoire courant")
         return False
 
@@ -162,7 +161,7 @@ def create_shortcuts():
 def main():
     """Fonction principale"""
     
-    print_header("🤖 INSTALLATION - Système de Recommandation d'Outils IA")
+    print_header("🐙 INSTALLATION - GitHub Repo Recommender")
     
     # Vérifications préalables
     if not check_python_version():

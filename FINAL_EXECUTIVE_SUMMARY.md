@@ -5,7 +5,7 @@
 ## 📦 LIVRABLE FINAL
 
 ```
-🤖 Système de Recommandation d'Outils IA
+🤖 Système de Recommandation de Repositories GitHub
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Version 2.0 - Interface GUI Streamlit
 Université 8 Mai 45 | 4ING NLP | 2026
@@ -22,7 +22,7 @@ Université 8 Mai 45 | 4ING NLP | 2026
 | **Code** | ~1,400 lignes |
 | **Documentation** | ~1,650 lignes |
 | **Pages App** | 6 complètes |
-| **Outils IA** | 94 référencés |
+| **Repositories GitHub** | 5 000 référencés |
 | **Performance** | <1 sec/requête |
 | **Précision** | 76% |
 | **Accessibilité** | Grand public ✅ |
@@ -66,7 +66,7 @@ START.md                   Démarrage rapide (50 lignes)
 
 ### 🟠 DONNÉES & IMAGES (4 fichiers)
 ```
-ai_tools_dataset.csv       94 outils IA (Database)
+github_top_repositories_V2.csv       5 000 repositories GitHub (Database)
 distribution_dataset.png   Graphique répartition
 comparaison_methodes.png   Graphique comparaison
 scores_recommandation.png  Graphique scores
@@ -253,7 +253,7 @@ Production-ready:          OUI ✅
 │                                        │
 │  ✅ 20 fichiers                        │
 │  ✅ 6 pages d'application              │
-│  ✅ 94 outils IA                       │
+│  ✅ 5 000 repositories GitHub                       │
 │  ✅ 1,400 lignes code                  │
 │  ✅ 1,650 lignes documentation         │
 │  ✅ Production-ready                   │
@@ -349,7 +349,7 @@ Université 8 Mai 45 | Guelma | Algérie | 2026
               ╱ IA POWER ╲
             ╱─────────────╲
            ╱ 6 Pages      ╲
-          ╱ 94 Outils     ╲
+          ╱ 5 000 repositories     ╲
          ╱ 76% Précision  ╲
         ╱ Production-Ready╲
        ╱───────────────────╲
@@ -359,3 +359,4 @@ Université 8 Mai 45 | Guelma | Algérie | 2026
 ---
 
 **BIENVENUE DANS LE FUTUR! 🚀**
+

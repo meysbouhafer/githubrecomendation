@@ -1,7 +1,7 @@
 """
-Script de lancement - Système de Recommandation d'Outils IA
-===========================================================
-Lance l'application Streamlit automatiquement
+Script de lancement - GitHub Repo Recommender
+=============================================
+Lance l'application Streamlit automatiquement.
 """
 
 import subprocess
@@ -12,7 +12,7 @@ import os
 
 def main():
     print("=" * 60)
-    print("  🤖 SYSTÈME DE RECOMMANDATION D'OUTILS IA")
+    print("  🐙 GITHUB REPO RECOMMENDER")
     print("  Lancement de l'interface graphique...")
     print("=" * 60)
     

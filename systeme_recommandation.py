@@ -1,504 +1,358 @@
 """
-Système de Recommandation d'Outils IA pour Étudiants
-======================================================
-Projet NLP - 4ING - Université 8 Mai 45
-Module : Traitement Automatique du Langage Naturel
-
-Ce système recommande des outils IA adaptés à un étudiant
-selon son domaine d'études et son besoin exprimé en texte libre.
+GitHub Repo Recommender — Hybride TF-IDF + SBERT
+==================================================
+Deux moteurs combinés :
+  - TF-IDF (sparse, lexical, rapide)           → bon pour les mots-clés exacts
+  - SBERT  (dense, sémantique, sentence-transformers) → bon pour les paraphrases
+  
+L'ambiguïté de la requête (longueur + entropie TF-IDF) ajuste dynamiquement
+le coefficient α : requête courte/vague → plus de SBERT, précise → plus de TF-IDF.
 """
 
-import pandas as pd
-import numpy as np
 import re
-import matplotlib.pyplot as plt
-import matplotlib
-matplotlib.rcParams['font.family'] = 'DejaVu Sans'
 import warnings
-warnings.filterwarnings('ignore')
-
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.preprocessing import LabelEncoder
+from typing import Optional
 
 import nltk
+import numpy as np
+import pandas as pd
 from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer
+from nltk.tokenize import word_tokenize
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 0. TÉLÉCHARGEMENT DES RESSOURCES NLTK
-# ─────────────────────────────────────────────────────────────────────────────
-def setup_nltk():
-    for resource in ['punkt', 'stopwords', 'punkt_tab']:
+warnings.filterwarnings("ignore")
+
+DATASET_PATH = "github_top_repositories_V2.csv"
+
+# Modèle SBERT — léger et multilingue, change selon besoin
+SBERT_MODEL = "all-MiniLM-L6-v2"
+
+
+# ---------------------------------------------------------------------------
+# Setup NLTK
+# ---------------------------------------------------------------------------
+
+def setup_nltk() -> None:
+    for resource in ["punkt", "stopwords", "punkt_tab"]:
         try:
             nltk.download(resource, quiet=True)
         except Exception:
             pass
 
-setup_nltk()
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 1. CHARGEMENT ET EXPLORATION DU DATASET
-# ─────────────────────────────────────────────────────────────────────────────
-def charger_dataset(chemin='ai_tools_dataset.csv'):
-    """Charge le dataset et affiche des statistiques descriptives."""
-    df = pd.read_csv(chemin)
-    print("=" * 60)
-    print("EXPLORATION DU DATASET")
-    print("=" * 60)
-    print(f"Nombre d'outils : {len(df)}")
-    print(f"Colonnes        : {list(df.columns)}")
-    print(f"\nDistribution par type de prix :")
-    print(df['gratuit'].value_counts().to_string())
-    print(f"\nLongueur moyenne des descriptions : {df['description'].str.len().mean():.0f} caractères")
+# ---------------------------------------------------------------------------
+# Prétraitement texte (identique à l'original)
+# ---------------------------------------------------------------------------
 
-    # Créer un texte combiné pour la vectorisation
-    df['texte_complet'] = (
-        df['nom'] + ' ' +
-        df['description'] + ' ' +
-        df['domaine'] + ' ' +
-        df['besoin']
-    )
-    return df
+def pretraiter_texte(texte: str) -> str:
+    texte = str(texte).lower()
+    texte = re.sub(r"[^a-z0-9\s\-]", " ", texte)
+    texte = re.sub(r"\s+", " ", texte).strip()
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 2. PRÉTRAITEMENT NLP
-# ─────────────────────────────────────────────────────────────────────────────
-def pretraiter_texte(texte, langue='french'):
-    """
-    Pipeline de prétraitement NLP :
-    1. Mise en minuscules
-    2. Suppression de la ponctuation et des chiffres
-    3. Tokenisation
-    4. Suppression des stopwords
-    5. Stemming
-    """
-    # Minuscules
-    texte = texte.lower()
-
-    # Suppression des caractères spéciaux et chiffres
-    texte = re.sub(r'[^a-zàâäéèêëîïôùûüç\s]', ' ', texte)
-    texte = re.sub(r'\s+', ' ', texte).strip()
-
-    # Tokenisation
     try:
-        tokens = word_tokenize(texte, language=langue)
+        tokens = word_tokenize(texte, language="english")
     except Exception:
         tokens = texte.split()
 
-    # Suppression des stopwords
     try:
-        mots_vides_fr = set(stopwords.words('french'))
-        mots_vides_en = set(stopwords.words('english'))
-        mots_vides = mots_vides_fr | mots_vides_en
+        mots_vides = set(stopwords.words("french")) | set(stopwords.words("english"))
     except Exception:
         mots_vides = set()
 
     tokens = [t for t in tokens if t not in mots_vides and len(t) > 2]
-
-    # Stemming (optionnel — commentez si vous préférez sans)
     stemmer = PorterStemmer()
     tokens = [stemmer.stem(t) for t in tokens]
+    return " ".join(tokens)
 
-    return ' '.join(tokens)
 
+# ---------------------------------------------------------------------------
+# Chargement dataset
+# ---------------------------------------------------------------------------
 
-def pretraiter_dataset(df):
-    """Applique le prétraitement à tout le dataset."""
-    print("\n" + "=" * 60)
-    print("PRÉTRAITEMENT NLP")
-    print("=" * 60)
-    df['texte_traite'] = df['texte_complet'].apply(pretraiter_texte)
-    print("Prétraitement terminé.")
-    print("\nExemple avant :", df['texte_complet'].iloc[0][:80])
-    print("Exemple après  :", df['texte_traite'].iloc[0][:80])
+def charger_dataset(chemin: str = DATASET_PATH) -> pd.DataFrame:
+    df = pd.read_csv(chemin)
+
+    df["Description"]       = df["Description"].fillna("")
+    df["Topics"]            = df["Topics"].fillna("")
+    df["Domain"]            = df["Domain"].fillna("Unknown")
+    df["Primary Language"]  = df["Primary Language"].fillna("N/A").replace("0", "N/A")
+    df["License"]           = df["License"].fillna("No License").replace("0", "No License")
+    df["Stars Count"]       = pd.to_numeric(df["Stars Count"], errors="coerce").fillna(0).astype(int)
+    df["Forks Count"]       = pd.to_numeric(df["Forks Count"], errors="coerce").fillna(0).astype(int)
+
+    df["texte_complet"] = (
+        df["Repository Name"].astype(str) + " "
+        + df["Description"].astype(str)   + " "
+        + df["Domain"].astype(str)        + " "
+        + df["Topics"].astype(str)        + " "
+        + df["Primary Language"].astype(str)
+    )
+    df["texte_traite"] = df["texte_complet"].apply(pretraiter_texte)
     return df
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 3. MÉTHODE 1 : TF-IDF + SIMILARITÉ COSINUS
-# ─────────────────────────────────────────────────────────────────────────────
-class RecommandateurTFIDF:
-    def __init__(self):
+
+# ---------------------------------------------------------------------------
+# Détection d'ambiguïté → coefficient α dynamique
+# ---------------------------------------------------------------------------
+
+def calculer_alpha(
+    requete: str,
+    vectoriseur: TfidfVectorizer,
+    alpha_min: float = 0.2,
+    alpha_max: float = 0.8,
+) -> float:
+    """
+    Retourne α ∈ [alpha_min, alpha_max], le poids du TF-IDF dans la fusion.
+    
+    Logique :
+      - Requête courte (1-2 tokens) ou mots inconnus du vocabulaire → TF-IDF moins fiable → α bas
+      - Requête précise et couverte par le vocabulaire → α élevé
+      - Entropie des scores TF-IDF sparse : si très concentrée → requête spécifique → α monte
+    """
+    tokens_bruts = requete.lower().split()
+    n_tokens = len(tokens_bruts)
+
+    # Score de couverture vocabulaire
+    vocab = set(vectoriseur.vocabulary_.keys())
+    tokens_traites = pretraiter_texte(requete).split()
+    couverture = sum(1 for t in tokens_traites if t in vocab) / max(len(tokens_traites), 1)
+
+    # Longueur normalisée (saturée à 10 tokens)
+    long_norm = min(n_tokens / 10.0, 1.0)
+
+    # Score composite → alpha
+    score = 0.5 * couverture + 0.5 * long_norm
+    alpha = alpha_min + score * (alpha_max - alpha_min)
+    return float(np.clip(alpha, alpha_min, alpha_max))
+
+
+# ---------------------------------------------------------------------------
+# Moteur TF-IDF (reprend l'original, légèrement factorisé)
+# ---------------------------------------------------------------------------
+
+class MoteurTFIDF:
+    def __init__(self) -> None:
         self.vectoriseur = TfidfVectorizer(
-            ngram_range=(1, 2),
-            max_features=5000,
-            sublinear_tf=True
+            ngram_range=(1, 2), max_features=10_000, sublinear_tf=True
         )
-        self.matrice_tfidf = None
-        self.df = None
+        self.matrice: Optional[object] = None
 
-    def entrainer(self, df):
-        self.df = df
-        self.matrice_tfidf = self.vectoriseur.fit_transform(df['texte_traite'])
-        print(f"\n[TF-IDF] Matrice créée : {self.matrice_tfidf.shape}")
+    def entrainer(self, textes: pd.Series) -> None:
+        self.matrice = self.vectoriseur.fit_transform(textes)
 
-    def recommander(self, requete, top_k=5, filtre_domaine=None):
-        """Retourne les top_k outils les plus similaires à la requête."""
+    def scorer(self, requete: str) -> np.ndarray:
         requete_traitee = pretraiter_texte(requete)
-        vecteur_requete = self.vectoriseur.transform([requete_traitee])
+        vecteur = self.vectoriseur.transform([requete_traitee])
+        return cosine_similarity(vecteur, self.matrice).flatten()
 
-        scores = cosine_similarity(vecteur_requete, self.matrice_tfidf).flatten()
 
-        df_resultat = self.df.copy()
-        df_resultat['score_tfidf'] = scores
+# ---------------------------------------------------------------------------
+# Moteur SBERT
+# ---------------------------------------------------------------------------
 
-        # Filtrage optionnel par domaine
-        if filtre_domaine:
-            masque = df_resultat['domaine'].str.lower().str.contains(
-                filtre_domaine.lower(), na=False
-            )
-            df_resultat = df_resultat[masque]
+class MoteurSBERT:
+    """
+    Encode les textes avec sentence-transformers (SBERT).
+    Installe le paquet si absent : pip install sentence-transformers
+    """
 
-        return df_resultat.nlargest(top_k, 'score_tfidf')[
-            ['nom', 'description', 'domaine', 'besoin', 'gratuit', 'lien', 'score_tfidf']
-        ].reset_index(drop=True)
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 4. MÉTHODE 2 : WORD2VEC + SIMILARITÉ COSINUS
-# ─────────────────────────────────────────────────────────────────────────────
-class RecommandateurWord2Vec:
-    def __init__(self):
+    def __init__(self, nom_modele: str = SBERT_MODEL) -> None:
+        self.nom_modele = nom_modele
         self.modele = None
-        self.vecteurs_outils = None
-        self.df = None
+        self.embeddings: Optional[np.ndarray] = None
 
-    def _phrase_vers_vecteur(self, texte):
-        """Moyenne des vecteurs Word2Vec des tokens présents dans le modèle."""
-        tokens = texte.split()
-        vecteurs = [
-            self.modele.wv[t] for t in tokens if t in self.modele.wv
-        ]
-        if not vecteurs:
-            return np.zeros(self.modele.vector_size)
-        return np.mean(vecteurs, axis=0)
+    def _charger_modele(self) -> None:
+        if self.modele is None:
+            try:
+                from sentence_transformers import SentenceTransformer
+                print(f"[SBERT] Chargement du modèle '{self.nom_modele}'…")
+                self.modele = SentenceTransformer(self.nom_modele)
+            except ImportError:
+                raise ImportError(
+                    "sentence-transformers n'est pas installé.\n"
+                    "Exécutez : pip install sentence-transformers"
+                )
 
-    def entrainer(self, df):
-        try:
-            from gensim.models import Word2Vec
-        except ImportError:
-            print("[Word2Vec] gensim non installé. pip install gensim")
-            return False
-
-        self.df = df
-        corpus = [texte.split() for texte in df['texte_traite']]
-
-        self.modele = Word2Vec(
-            sentences=corpus,
-            vector_size=100,
-            window=5,
-            min_count=1,
-            workers=2,
-            epochs=20,
-            seed=42
+    def entrainer(self, textes: pd.Series, batch_size: int = 64) -> None:
+        self._charger_modele()
+        print(f"[SBERT] Encodage de {len(textes):,} textes…")
+        self.embeddings = self.modele.encode(
+            textes.tolist(),
+            batch_size=batch_size,
+            show_progress_bar=True,
+            convert_to_numpy=True,
+            normalize_embeddings=True,   # cosine = produit scalaire après normalisation
         )
+        print("[SBERT] Encodage terminé.")
 
-        self.vecteurs_outils = np.array([
-            self._phrase_vers_vecteur(texte) for texte in df['texte_traite']
-        ])
-        print(f"[Word2Vec] Modèle entraîné | Vocabulaire : {len(self.modele.wv)} mots")
-        return True
+    def scorer(self, requete: str) -> np.ndarray:
+        if self.embeddings is None:
+            raise RuntimeError("SBERT non entraîné.")
+        self._charger_modele()
+        vecteur = self.modele.encode(
+            [requete],
+            convert_to_numpy=True,
+            normalize_embeddings=True,
+        )
+        # Produit scalaire = cosine car vecteurs normalisés
+        return (self.embeddings @ vecteur.T).flatten()
 
-    def recommander(self, requete, top_k=5, filtre_domaine=None):
-        requete_traitee = pretraiter_texte(requete)
-        vecteur_requete = self._phrase_vers_vecteur(requete_traitee).reshape(1, -1)
 
-        scores = cosine_similarity(vecteur_requete, self.vecteurs_outils).flatten()
+# ---------------------------------------------------------------------------
+# Recommandateur hybride TF-IDF + SBERT
+# ---------------------------------------------------------------------------
 
+class RecommandateurHybride:
+    """
+    Fusionne les scores TF-IDF et SBERT via un coefficient α adaptatif.
+    
+    score_final = α · score_tfidf + (1-α) · score_sbert
+    
+    α est calculé automatiquement à partir de l'ambiguïté de la requête,
+    ou peut être fixé manuellement (alpha_fixe ∈ [0, 1]).
+    """
+
+    def __init__(self, utiliser_sbert: bool = True) -> None:
+        self.tfidf  = MoteurTFIDF()
+        self.sbert  = MoteurSBERT() if utiliser_sbert else None
+        self.df: Optional[pd.DataFrame] = None
+        self.utiliser_sbert = utiliser_sbert
+
+    def entrainer(self, df: pd.DataFrame) -> None:
+        self.df = df.copy()
+
+        # TF-IDF sur texte prétraité (stemming, stop-words)
+        print("[TF-IDF] Entraînement…")
+        self.tfidf.entrainer(df["texte_traite"])
+        print("[TF-IDF] Terminé.")
+
+        # SBERT sur texte original riche (pas de stemming → meilleure sémantique)
+        if self.utiliser_sbert and self.sbert is not None:
+            self.sbert.entrainer(df["texte_complet"])
+
+    def recommander(
+        self,
+        requete: str,
+        top_k: int = 5,
+        filtre_domaine: Optional[str] = None,
+        filtre_langue: Optional[str] = None,
+        min_stars: int = 0,
+        alpha_fixe: Optional[float] = None,
+    ) -> pd.DataFrame:
+        """
+        Paramètres
+        ----------
+        requete       : texte libre de l'utilisateur
+        top_k         : nombre de résultats à retourner
+        filtre_domaine: filtre optionnel sur la colonne Domain
+        filtre_langue : filtre optionnel sur Primary Language
+        min_stars     : seuil minimum d'étoiles
+        alpha_fixe    : si fourni, utilise cette valeur fixe pour α
+                        (0.0 = SBERT pur, 1.0 = TF-IDF pur)
+        """
+        if self.df is None:
+            raise RuntimeError("Modèle non entraîné.")
+
+        # --- Scores individuels ---
+        scores_tfidf = self.tfidf.scorer(requete)
+
+        if self.utiliser_sbert and self.sbert is not None:
+            scores_sbert = self.sbert.scorer(requete)
+        else:
+            scores_sbert = scores_tfidf  # fallback
+
+        # --- Coefficient α ---
+        if alpha_fixe is not None:
+            alpha = float(np.clip(alpha_fixe, 0.0, 1.0))
+        else:
+            alpha = calculer_alpha(requete, self.tfidf.vectoriseur)
+
+        # --- Fusion ---
+        scores_final = alpha * scores_tfidf + (1.0 - alpha) * scores_sbert
+
+        # --- Construction du dataframe résultat ---
         df_resultat = self.df.copy()
-        df_resultat['score_w2v'] = scores
+        df_resultat["score"]        = scores_final
+        df_resultat["score_tfidf"]  = scores_tfidf
+        df_resultat["score_sbert"]  = scores_sbert
+        df_resultat["alpha"]        = round(alpha, 3)
 
+        # --- Filtres ---
         if filtre_domaine:
-            masque = df_resultat['domaine'].str.lower().str.contains(
+            masque = df_resultat["Domain"].str.lower().str.contains(
                 filtre_domaine.lower(), na=False
             )
             df_resultat = df_resultat[masque]
 
-        return df_resultat.nlargest(top_k, 'score_w2v')[
-            ['nom', 'description', 'domaine', 'besoin', 'gratuit', 'lien', 'score_w2v']
-        ].reset_index(drop=True)
+        if filtre_langue:
+            df_resultat = df_resultat[df_resultat["Primary Language"] == filtre_langue]
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 5. ÉVALUATION — Precision@K et Recall@K
-# ─────────────────────────────────────────────────────────────────────────────
+        if min_stars > 0:
+            df_resultat = df_resultat[df_resultat["Stars Count"] >= min_stars]
 
-REQUETES_TEST = [
-    {
-        "requete": "je suis en informatique et je veux générer du code automatiquement",
-        "pertinents": ["GitHub Copilot", "Tabnine", "Codeium", "Cursor", "Blackbox AI", "Replit AI"]
-    },
-    {
-        "requete": "j'ai besoin de traduire des documents académiques en anglais",
-        "pertinents": ["DeepL", "ChatGPT", "Claude", "Gemini", "QuillBot", "Wordtune"]
-    },
-    {
-        "requete": "je veux trouver des articles scientifiques pour ma thèse",
-        "pertinents": ["Elicit", "Consensus", "Research Rabbit", "Scite", "Semantic Scholar", "Connected Papers", "SciSpace"]
-    },
-    {
-        "requete": "étudiant en médecine cherche à analyser des publications scientifiques",
-        "pertinents": ["Elicit", "Consensus", "Scite", "SciSpace", "Research Rabbit", "Semantic Scholar"]
-    },
-    {
-        "requete": "je veux créer une belle présentation pour mon exposé",
-        "pertinents": ["Gamma", "Beautiful AI", "Tome", "Canva AI", "Copilot Microsoft", "Notion AI"]
-    },
-    {
-        "requete": "étudiant en droit je cherche un outil pour analyser des contrats",
-        "pertinents": ["Harvey AI", "Legalyze", "Casetext", "Lexis Plus AI", "Docusign AI"]
-    },
-    {
-        "requete": "je veux générer des images pour mon projet de design graphique",
-        "pertinents": ["Midjourney", "DALL-E 3", "Canva AI", "Adobe Firefly", "Leonardo AI", "Stable Diffusion"]
-    },
-    {
-        "requete": "j'ai besoin de résumer un long document PDF rapidement",
-        "pertinents": ["Humata", "ChatPDF", "Adobe Acrobat AI", "ChatGPT", "Claude", "SciSpace"]
-    },
-    {
-        "requete": "apprendre les mathématiques et résoudre des équations",
-        "pertinents": ["Wolfram Alpha", "Symbolab", "Photomath", "GeoGebra AI", "Desmos", "Khanmigo"]
-    },
-    {
-        "requete": "je veux créer une vidéo pour mon projet multimédia",
-        "pertinents": ["RunwayML", "Lumen5", "Pictory", "Synthesia", "Pika Labs", "Descript"]
-    }
-]
+        colonnes = [
+            "Repository Name", "Full Name", "Description",
+            "Domain", "Primary Language", "Stars Count", "Forks Count",
+            "License", "score", "score_tfidf", "score_sbert", "alpha",
+        ]
+        return (
+            df_resultat
+            .nlargest(top_k, "score")[colonnes]
+            .reset_index(drop=True)
+        )
 
 
-def evaluer_systeme(recommandeur, methode_nom, top_k=5):
-    """Calcule Precision@K et Recall@K sur les requêtes de test."""
-    precisions = []
-    recalls = []
+# ---------------------------------------------------------------------------
+# Démonstration CLI
+# ---------------------------------------------------------------------------
 
-    for test in REQUETES_TEST:
-        resultats = recommandeur.recommander(test["requete"], top_k=top_k)
-        recommandes = set(resultats['nom'].tolist())
-        pertinents = set(test["pertinents"])
+def demo_cli() -> None:
+    print("=" * 70)
+    print(" GITHUB REPO RECOMMENDER — HYBRIDE TF-IDF + SBERT")
+    print("=" * 70)
 
-        vrais_positifs = recommandes & pertinents
-        precision = len(vrais_positifs) / top_k if top_k > 0 else 0
-        recall = len(vrais_positifs) / len(pertinents) if pertinents else 0
+    df = charger_dataset(DATASET_PATH)
+    print(f"Dataset chargée : {len(df):,} repositories\n")
 
-        precisions.append(precision)
-        recalls.append(recall)
+    rec = RecommandateurHybride(utiliser_sbert=True)
+    rec.entrainer(df)
 
-    moy_precision = np.mean(precisions)
-    moy_recall = np.mean(recalls)
-    f1 = (2 * moy_precision * moy_recall / (moy_precision + moy_recall)
-          if (moy_precision + moy_recall) > 0 else 0)
-
-    print(f"\n{'─'*50}")
-    print(f"ÉVALUATION — {methode_nom} (Top-{top_k})")
-    print(f"{'─'*50}")
-    print(f"  Precision@{top_k} moyenne : {moy_precision:.4f}  ({moy_precision*100:.1f}%)")
-    print(f"  Recall@{top_k} moyenne    : {moy_recall:.4f}  ({moy_recall*100:.1f}%)")
-    print(f"  F1-score                  : {f1:.4f}")
-
-    return {
-        "methode": methode_nom,
-        "precision": moy_precision,
-        "recall": moy_recall,
-        "f1": f1,
-        "precisions": precisions,
-        "recalls": recalls
-    }
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 6. VISUALISATIONS
-# ─────────────────────────────────────────────────────────────────────────────
-def visualiser_distribution(df):
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    fig.suptitle("Exploration du dataset — Outils IA", fontsize=14)
-
-    # Distribution par prix
-    counts = df['gratuit'].value_counts()
-    colors = ['#4CAF50', '#2196F3', '#FF9800']
-    axes[0].bar(counts.index, counts.values, color=colors[:len(counts)])
-    axes[0].set_title("Répartition par type de prix")
-    axes[0].set_xlabel("Type")
-    axes[0].set_ylabel("Nombre d'outils")
-    for i, v in enumerate(counts.values):
-        axes[0].text(i, v + 0.5, str(v), ha='center', fontweight='bold')
-
-    # Longueur des descriptions
-    longueurs = df['description'].str.len()
-    axes[1].hist(longueurs, bins=20, color='#7B68EE', edgecolor='white')
-    axes[1].set_title("Distribution de la longueur des descriptions")
-    axes[1].set_xlabel("Nombre de caractères")
-    axes[1].set_ylabel("Fréquence")
-    axes[1].axvline(longueurs.mean(), color='red', linestyle='--',
-                    label=f'Moyenne: {longueurs.mean():.0f}')
-    axes[1].legend()
-
-    plt.tight_layout()
-    plt.savefig('distribution_dataset.png', dpi=150, bbox_inches='tight')
-    plt.close()
-    print("\n[Figure] distribution_dataset.png sauvegardée")
-
-
-def visualiser_comparaison(resultats_tfidf, resultats_w2v, top_k=5):
-    methodes = ['TF-IDF', 'Word2Vec']
-    precisions = [resultats_tfidf['precision'], resultats_w2v['precision']]
-    recalls = [resultats_tfidf['recall'], resultats_w2v['recall']]
-    f1s = [resultats_tfidf['f1'], resultats_w2v['f1']]
-
-    x = np.arange(len(methodes))
-    largeur = 0.25
-
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    fig.suptitle(f"Comparaison des méthodes (Top-{top_k})", fontsize=14)
-
-    # Barres de métriques
-    bars1 = axes[0].bar(x - largeur, precisions, largeur, label='Precision', color='#4CAF50')
-    bars2 = axes[0].bar(x,           recalls,    largeur, label='Recall',    color='#2196F3')
-    bars3 = axes[0].bar(x + largeur, f1s,        largeur, label='F1-score',  color='#FF9800')
-
-    for bars in [bars1, bars2, bars3]:
-        for bar in bars:
-            h = bar.get_height()
-            axes[0].text(bar.get_x() + bar.get_width()/2, h + 0.005,
-                         f'{h:.2f}', ha='center', va='bottom', fontsize=9)
-
-    axes[0].set_title("Métriques d'évaluation par méthode")
-    axes[0].set_xticks(x)
-    axes[0].set_xticklabels(methodes)
-    axes[0].set_ylim(0, 1.1)
-    axes[0].legend()
-    axes[0].set_ylabel("Score")
-
-    # Précision par requête de test
-    requetes_courtes = [f"Q{i+1}" for i in range(len(REQUETES_TEST))]
-    axes[1].plot(requetes_courtes, resultats_tfidf['precisions'],
-                 'o-', label='TF-IDF', color='#4CAF50', linewidth=2)
-    axes[1].plot(requetes_courtes, resultats_w2v['precisions'],
-                 's-', label='Word2Vec', color='#FF9800', linewidth=2)
-    axes[1].set_title(f"Precision@{top_k} par requête de test")
-    axes[1].set_xlabel("Requête")
-    axes[1].set_ylabel(f"Precision@{top_k}")
-    axes[1].set_ylim(0, 1.1)
-    axes[1].legend()
-    axes[1].grid(True, alpha=0.3)
-
-    plt.tight_layout()
-    plt.savefig('comparaison_methodes.png', dpi=150, bbox_inches='tight')
-    plt.close()
-    print("[Figure] comparaison_methodes.png sauvegardée")
-
-
-def visualiser_scores_tfidf(df, requete, scores_col='score_tfidf', top_k=10):
-    top = df.nlargest(top_k, scores_col)[['nom', scores_col]]
-    fig, ax = plt.subplots(figsize=(10, 5))
-    couleurs = ['#4CAF50' if s > 0.1 else '#2196F3' if s > 0.05 else '#FF9800'
-                for s in top[scores_col]]
-    bars = ax.barh(top['nom'][::-1], top[scores_col][::-1], color=couleurs[::-1])
-    ax.set_title(f"Top-{top_k} recommandations\n'{requete[:60]}...'", fontsize=11)
-    ax.set_xlabel("Score de similarité")
-    for bar, val in zip(bars, top[scores_col][::-1]):
-        ax.text(bar.get_width() + 0.001, bar.get_y() + bar.get_height()/2,
-                f'{val:.3f}', va='center', fontsize=9)
-    plt.tight_layout()
-    plt.savefig('scores_recommandation.png', dpi=150, bbox_inches='tight')
-    plt.close()
-    print("[Figure] scores_recommandation.png sauvegardée")
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 7. INTERFACE UTILISATEUR (démonstration)
-# ─────────────────────────────────────────────────────────────────────────────
-def afficher_recommandations(resultats, methode_nom):
-    score_col = 'score_tfidf' if 'tfidf' in methode_nom.lower() else 'score_w2v'
-    print(f"\n{'='*60}")
-    print(f"  RÉSULTATS — {methode_nom}")
-    print(f"{'='*60}")
-    for i, (_, row) in enumerate(resultats.iterrows(), 1):
-        score = row.get(score_col, row.get('score_tfidf', row.get('score_w2v', 0)))
-        print(f"\n  {i}. {row['nom']}  [{row['gratuit']}]  (score: {score:.4f})")
-        print(f"     Domaine : {row['domaine']}")
-        print(f"     Usage   : {row['besoin'][:70]}")
-        print(f"     Lien    : {row['lien']}")
-
-
-def demo_systeme(rec_tfidf, rec_w2v_ok, rec_w2v):
-    requetes_demo = [
-        "je suis étudiant en informatique et je veux apprendre à programmer",
-        "j'ai besoin d'un outil pour rédiger ma thèse et corriger mon texte",
-        "étudiant en médecine je veux rechercher des articles scientifiques",
-        "je cherche un outil pour créer des présentations professionnelles",
+    requetes = [
+        ("machine learning framework python deep learning", None, None),
+        ("natural language processing",                    None, "Python"),
+        ("distributed systems fault tolerance",            None, None),
     ]
 
-    for requete in requetes_demo:
-        print(f"\n{'#'*60}")
-        print(f"  REQUÊTE : {requete}")
-        print(f"{'#'*60}")
+    for requete, domaine, langue in requetes:
+        print("\n" + "=" * 70)
+        print(f"Requête : {requete}")
+        if domaine: print(f"  Filtre domaine   : {domaine}")
+        if langue:  print(f"  Filtre langage   : {langue}")
 
-        res_tfidf = rec_tfidf.recommander(requete, top_k=5)
-        afficher_recommandations(res_tfidf, "TF-IDF")
+        resultats = rec.recommander(
+            requete, top_k=5,
+            filtre_domaine=domaine,
+            filtre_langue=langue,
+        )
 
-        if rec_w2v_ok:
-            res_w2v = rec_w2v.recommander(requete, top_k=5)
-            afficher_recommandations(res_w2v, "Word2Vec")
+        alpha_utilise = resultats["alpha"].iloc[0] if not resultats.empty else "N/A"
+        print(f"  α utilisé : {alpha_utilise}  (TF-IDF={alpha_utilise}, SBERT={round(1-float(alpha_utilise),3)})")
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 8. PIPELINE PRINCIPAL
-# ─────────────────────────────────────────────────────────────────────────────
-def main():
-    print("\n" + "="*60)
-    print("  SYSTÈME DE RECOMMANDATION D'OUTILS IA POUR ÉTUDIANTS")
-    print("  Projet NLP — 4ING — Université 8 Mai 45")
-    print("="*60)
-
-    # Étape 1 : Chargement
-    df = charger_dataset('ai_tools_dataset.csv')
-
-    # Étape 2 : Exploration visuelle
-    visualiser_distribution(df)
-
-    # Étape 3 : Prétraitement
-    df = pretraiter_dataset(df)
-
-    # Étape 4 : Méthode 1 — TF-IDF
-    print("\n" + "="*60)
-    print("MÉTHODE 1 : TF-IDF + SIMILARITÉ COSINUS")
-    print("="*60)
-    rec_tfidf = RecommandateurTFIDF()
-    rec_tfidf.entrainer(df)
-
-    # Étape 5 : Méthode 2 — Word2Vec
-    print("\n" + "="*60)
-    print("MÉTHODE 2 : WORD2VEC + SIMILARITÉ COSINUS")
-    print("="*60)
-    rec_w2v = RecommandateurWord2Vec()
-    w2v_ok = rec_w2v.entrainer(df)
-
-    # Étape 6 : Démonstration
-    print("\n" + "="*60)
-    print("DÉMONSTRATION DU SYSTÈME")
-    print("="*60)
-    demo_systeme(rec_tfidf, w2v_ok, rec_w2v)
-
-    # Étape 7 : Évaluation et comparaison
-    print("\n" + "="*60)
-    print("ÉVALUATION ET COMPARAISON DES MÉTHODES")
-    print("="*60)
-    top_k = 5
-    res_tfidf = evaluer_systeme(rec_tfidf, "TF-IDF", top_k=top_k)
-
-    if w2v_ok:
-        res_w2v = evaluer_systeme(rec_w2v, "Word2Vec", top_k=top_k)
-        visualiser_comparaison(res_tfidf, res_w2v, top_k=top_k)
-    else:
-        print("\n[Word2Vec] gensim absent — comparaison partielle uniquement.")
-
-    # Visualisation des scores pour une requête exemple
-    requete_exemple = "je suis en informatique et je veux générer du code automatiquement"
-    res_demo = rec_tfidf.recommander(requete_exemple, top_k=10)
-    visualiser_scores_tfidf(res_demo, requete_exemple, top_k=10)
-
-    print("\n" + "="*60)
-    print("TRAITEMENT TERMINÉ — Figures sauvegardées dans le dossier courant.")
-    print("="*60)
+        for i, row in resultats.iterrows():
+            print("-" * 70)
+            print(f"#{i+1} {row['Repository Name']}  ({row['Full Name']})")
+            print(
+                f"  Score final : {row['score']:.4f}"
+                f"  | TF-IDF : {row['score_tfidf']:.4f}"
+                f"  | SBERT  : {row['score_sbert']:.4f}"
+            )
+            print(f"  Langage : {row['Primary Language']}  | Stars : {row['Stars Count']:,}")
+            print(f"  Domaine : {row['Domain']}")
+            print(f"  {str(row['Description'])[:140]}")
 
 
 if __name__ == "__main__":
-    main()
+    setup_nltk()
+    demo_cli()

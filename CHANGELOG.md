@@ -78,7 +78,7 @@ Nouveaux:
 
 Conservés:
 ├── systeme_recommandation.py ← Version CLI (toujours fonctionnelle)
-├── ai_tools_dataset.csv      ← Dataset
+├── github_top_repositories_V2.csv      ← Dataset
 
 Générés:
 ├── distribution_dataset.png
@@ -145,7 +145,7 @@ Générés:
 
 ### Fonctionnalités
 
-- Chargement et exploration du dataset (94 outils)
+- Chargement et exploration du dataset (5 000 repositories)
 - Prétraitement NLP complet
   - Minuscules
   - Suppression ponctuation
@@ -164,7 +164,7 @@ Générés:
 
 ```
 systeme_recommandation.py  (500 lignes)
-ai_tools_dataset.csv       (94 outils)
+github_top_repositories_V2.csv       (5 000 repositories)
 ```
 
 ### Limitations (Version 1.0)
@@ -183,7 +183,7 @@ ai_tools_dataset.csv       (94 outils)
 ### Qu'est-ce qui Rest?
 
 ✅ **Conservé:**
-- Dataset (94 outils) - identique
+- Dataset (5 000 repositories) - identique
 - Algorithmes TF-IDF - optimisés
 - Prétraitement NLP - amélioré
 - Évaluation metrics - même résultats
@@ -327,3 +327,4 @@ ai_tools_dataset.csv       (94 outils)
 **Dernière mise à jour:** 31 Mars 2026  
 **Version actuelle:** 2.0 GUI  
 **Status:** ✅ Production Ready
+

@@ -4,8 +4,8 @@
 
 ## 🎯 Objectif du Projet
 
-Créer un **système intelligent de recommandation d'outils IA** pour les étudiants, capable de :
-- Recommander les meilleurs outils IA basés sur les besoins
+Créer un **système intelligent de recommandation de repositories GitHub** pour les étudiants, capable de :
+- Recommander les meilleurs repositories GitHub basés sur les besoins
 - Analyser les requêtes en langage naturel
 - Utiliser le Traitement du Langage Naturel (NLP) pour comprendre le contexte
 - Fournir une interface conviviale (GUI)
@@ -29,7 +29,7 @@ files (1)/
 │   └── systeme_recommandation.py ← Version CLI originale
 │
 ├── 📊 DONNÉES
-│   └── ai_tools_dataset.csv     ← 94 outils IA
+│   └── github_top_repositories_V2.csv     ← 5 000 repositories GitHub
 │
 ├── 📚 DOCUMENTATION
 │   ├── README.md                ← Documentation technique
@@ -69,11 +69,11 @@ files (1)/
 - Évaluation des performances
 - Visualisations
 
-#### 3. **ai_tools_dataset.csv**
-**Contenu:** 94 outils IA  
+#### 3. **github_top_repositories_V2.csv**
+**Contenu:** 5 000 repositories GitHub  
 **Colonnes:**
 ```
-nom | description | domaine | besoin | gratuit | lien
+Repository Name | Full Name | Description | Domain | Primary Language | Stars Count | Forks Count | License | Topics
 ```
 
 ---
@@ -142,7 +142,7 @@ gensim             # Word2Vec (optionnel)
 
 ## 📊 DONNÉES
 
-### Dataset: 94 Outils IA
+### Dataset: 5 000 repositories GitHub
 
 | Catégorie | Nombre | % |
 |-----------|--------|-----|
@@ -261,12 +261,12 @@ MAX_FEATURES = 5000       # Features TF-IDF
 streamlit run app.py --server.port 8502
 ```
 
-### Ajouter/Éditer un Outil
+### Ajouter/Éditer un Repository
 
-Modifiez `ai_tools_dataset.csv`:
+Modifiez `github_top_repositories_V2.csv`:
 ```csv
-nom,description,domaine,besoin,gratuit,lien
-Nouveau Tool,Description,Domaine,Usage,gratuit,https://example.com
+Repository Name,Full Name,Description,Domain,Primary Language,Stars Count,Forks Count,License,Topics
+my-repo,owner/my-repo,Description du repo,Machine Learning,Python,1200,180,MIT,"ml,deep-learning"
 ```
 
 ---
@@ -321,7 +321,7 @@ Nouveau Tool,Description,Domaine,Usage,gratuit,https://example.com
 → streamlit run app.py --server.port 8502
 
 ❌ "CSV file not found"
-→ Vérifiez que ai_tools_dataset.csv est dans le même dossier
+→ Vérifiez que github_top_repositories_V2.csv est dans le même dossier
 
 ❌ "Pas de résultats"
 → Rédigez une requête plus détaillée
@@ -348,7 +348,7 @@ Nouveau Tool,Description,Domaine,Usage,gratuit,https://example.com
 | Lignes de Code (total) | ~1,100 |
 | Fichiers Python | 3 |
 | Fichiers Documentation | 4 |
-| Outils IA référencés | 94 |
+| Repositories GitHub référencés | 5 000 |
 | Pages GUI | 6 |
 | Domaines couverts | 15+ |
 | Temps de traitement moyen | <1 sec |
@@ -360,7 +360,7 @@ Nouveau Tool,Description,Domaine,Usage,gratuit,https://example.com
 ## 🎯 Prochaines Étapes Potentielles
 
 ### Améliorations Futures
-- [ ] Ajouter plus d'outils au dataset
+- [ ] Ajouter plus de repositories au dataset
 - [ ] Implémenter Word2Vec complètement
 - [ ] Ajouter des utilisateurs et historique
 - [ ] Système de feedback (bon/mauvais résultat)
@@ -379,7 +379,7 @@ Nouveau Tool,Description,Domaine,Usage,gratuit,https://example.com
 **Statut:** ✅ Complet et Fonctionnel  
 **Version:** 2.0 GUI  
 **Interface:** Streamlit moderne et conviviale  
-**Base d'outils:** 94 outils IA  
+**Base de repositories:** 5 000 repositories GitHub  
 **Performance:** 76% de précision  
 **Code:** ~1,100 lignes bien documentées  
 
@@ -388,3 +388,4 @@ Nouveau Tool,Description,Domaine,Usage,gratuit,https://example.com
 ---
 
 **Fait avec ❤️ par la Promo 4ING - Université 8 Mai 45**
+

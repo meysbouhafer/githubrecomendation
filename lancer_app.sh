@@ -5,7 +5,7 @@
 
 echo ""
 echo "============================================================"
-echo "  🤖 Système de Recommandation d'Outils IA"
+echo "  🐙 GitHub Repo Recommender"
 echo "  Interface Graphique Streamlit"
 echo "============================================================"
 echo ""

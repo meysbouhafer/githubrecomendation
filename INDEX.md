@@ -42,7 +42,7 @@ files (1)/
 │  └─ setup.py                  ← Installation auto
 │
 ├─ 📊 DONNÉES
-│  ├─ ai_tools_dataset.csv      ← 94 outils IA
+│  ├─ github_top_repositories_V2.csv      ← 5 000 repositories GitHub
 │  ├─ distribution_dataset.png  ← Graphique 1
 │  ├─ comparaison_methodes.png  ← Graphique 2
 │  └─ scores_recommandation.png ← Graphique 3
@@ -160,7 +160,7 @@ streamlit run app.py --server.port 8502
 ```
 
 ### ❌ "CSV not found"
-⚠️ `ai_tools_dataset.csv` doit être dans le même dossier
+⚠️ `github_top_repositories_V2.csv` doit être dans le même dossier
 
 ### ❌ "App très lente"
 → Réduisez les résultats (5 au lieu de 10)
@@ -174,7 +174,7 @@ streamlit run app.py --server.port 8502
 
 | Métrique | Valeur |
 |----------|--------|
-| **Outils IA** | 94 |
+| **Repositories GitHub** | 5 000 |
 | **Domaines** | 15+ |
 | **Précision** | 76% |
 | **Pages GUI** | 6 |
@@ -291,7 +291,7 @@ streamlit run app.py --server.port 8502
 
 ## 🎉 BIENVENUE !
 
-**Vous êtes maintenant prêt à utiliser le système de recommandation d'outils IA!**
+**Vous êtes maintenant prêt à utiliser le système de recommandation de repositories GitHub!**
 
 Amusez-vous bien ! 🚀
 
@@ -303,3 +303,4 @@ Amusez-vous bien ! 🚀
 - 📋 Vue d'ensemble: [RESUME_PROJET.md](RESUME_PROJET.md)
 
 **Made with ❤️ by NLP 4ING Team**
+

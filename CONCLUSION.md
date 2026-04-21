@@ -45,7 +45,7 @@ Performance:   OK     →  Excellente
 - `CAS_UTILISATION.md` - Exemples
 
 #### 🟠 Données & Images (4 fichiers)
-- `ai_tools_dataset.csv` - Dataset
+- `github_top_repositories_V2.csv` - Dataset
 - `distribution_dataset.png` - Graphique
 - `comparaison_methodes.png` - Graphique
 - `scores_recommandation.png` - Graphique
@@ -102,7 +102,7 @@ http://localhost:8501
 | **Code** | 1,400 lignes |
 | **Documentation** | 1,700 lignes |
 | **Pages GUI** | 6 |
-| **Outils IA** | 94 |
+| **Repositories GitHub** | 5 000 |
 | **Domaines** | 15+ |
 | **Précision** | 76% |
 | **Recall** | 63.5% |
@@ -342,7 +342,7 @@ pip install -r requirements.txt
 ### 🛠️ MODIFIE
 - `config.py` - Configuration
 - `app.py` - Application
-- `ai_tools_dataset.csv` - Données
+- `github_top_repositories_V2.csv` - Données
 
 ---
 
@@ -408,7 +408,7 @@ Fichiers:              21 ✅
 Code (lignes):     1,400 ✅
 Documentation:     1,700 ✅
 Pages App:             6 ✅
-Outils IA:            94 ✅
+Repositories GitHub:          5 000 ✅
 Performance:         76% ✅
 Production-ready:   YES ✅
 
@@ -420,3 +420,4 @@ Status: ✅ MISSION ACCOMPLIE!
 **MERCI D'AVOIR UTILISÉ CE SYSTÈME!** 🎊
 
 À bientôt! 👋
+

@@ -62,7 +62,7 @@ De **script texte basique** à **application GUI professionnelle** ! 🚀
 
 ```
 ✅ systeme_recommandation.py  (500 lignes - version CLI originale)
-✅ ai_tools_dataset.csv        (94 outils IA - dataset)
+✅ github_top_repositories_V2.csv        (5 000 repositories GitHub - dataset)
 ✅ distribution_dataset.png    (Visualisation)
 ✅ comparaison_methodes.png    (Visualisation)
 ✅ scores_recommandation.png   (Visualisation)
@@ -121,7 +121,7 @@ Total:         16 fichiers
 ✅ Exploration riche  
 
 ### 📊 Données
-✅ 94 outils IA référencés  
+✅ 5 000 repositories GitHub référencés  
 ✅ Métadonnées complètes  
 ✅ 15+ domaines couverts  
 ✅ 3 types de tarification  
@@ -174,7 +174,7 @@ Utilisateur Lambda
 Application GUI (app.py)
     ├─ 6 Pages
     ├─ Moteur IA
-    ├─ 94 Outils
+    ├─ 5 000 repositories
     └─ Favoris
 
 Développeur
@@ -236,7 +236,7 @@ Université:    8 Mai 45, Guelma
 Formation:     4ème Année Ingénieur (4ING)
 Module:        Traitement du Langage Naturel
 Année:         2025-2026
-Projet:        Système de Recommandation d'Outils IA
+Projet:        Système de Recommandation de Repositories GitHub
 Équipe:        Groupe NLP Complet
 Status:        ✅ Complété avec succès
 ```
@@ -271,7 +271,7 @@ Status:        ✅ Complété avec succès
 
 ### 🗂️ Données (4 fichiers)
 ```
-✅ ai_tools_dataset.csv      - 94 outils
+✅ github_top_repositories_V2.csv      - 5 000 repositories
 ✅ distribution_dataset.png  - Graphique 1
 ✅ comparaison_methodes.png  - Graphique 2
 ✅ scores_recommandation.png - Graphique 3
@@ -354,7 +354,7 @@ http://localhost:8501
 ```
 
 ### Résultat:
-**Interface GUI moderne, 6 pages, 94 outils, recommandations intelligentes!** 🎉
+**Interface GUI moderne, 6 pages, 5 000 repositories, recommandations intelligentes!** 🎉
 
 ---
 
@@ -440,7 +440,7 @@ Pour aller plus loin:
 
 **Bravo! 🎉**
 
-Vous avez maintenant une application **GUI profesionnelle** et **prête à l'emploi** pour recommander des outils IA aux étudiants !
+Vous avez maintenant une application **GUI profesionnelle** et **prête à l'emploi** pour recommander des Repositories GitHub aux étudiants !
 
 - 🖥️ Interface moderne
 - 🤖 Moteur IA intelligent
@@ -454,3 +454,4 @@ Vous avez maintenant une application **GUI profesionnelle** et **prête à l'emp
 
 **Made with ❤️ by NLP 4ING Team**  
 **Université 8 Mai 45 · 2026**
+
